@@ -116,4 +116,9 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // TensorFlow Lite dependencies for sign language model
+    implementation 'org.tensorflow:tensorflow-lite:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-select-tf-ops:2.14.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.14.0'
 }

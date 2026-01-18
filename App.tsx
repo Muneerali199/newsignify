@@ -1,44 +1,50 @@
 /**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
+ * Signify - Sign Language Translation App
+ * Real-time sign language detection using TensorFlow Lite
+ * 
  * @format
  */
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import React, { useEffect } from 'react';
+import { StatusBar, StyleSheet, LogBox, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AppNavigator } from './src/navigation';
+import { Colors } from './src/theme';
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+// Ignore specific warnings
+LogBox.ignoreLogs([
+  'ViewPropTypes will be removed',
+  'ColorPropType will be removed',
+]);
+
+function App(): React.JSX.Element {
+  useEffect(() => {
+    // Set navigation bar color on Android
+    if (Platform.OS === 'android') {
+      StatusBar.setBackgroundColor(Colors.background.primary);
+      StatusBar.setBarStyle('light-content');
+    }
+  }, []);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
-  );
-}
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
+    <GestureHandlerRootView style={styles.container}>
+      <SafeAreaProvider>
+        <StatusBar
+          barStyle="light-content"
+          backgroundColor={Colors.background.primary}
+          translucent={true}
+        />
+        <AppNavigator />
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: Colors.background.primary,
   },
 });
 
