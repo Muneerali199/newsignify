@@ -1,0 +1,65 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+signify_env/
+venv/
+env/
+ENV/
+
+# Large model files (keep only the small TFLite files)
+*.keras
+*.keras.zip
+*.h5
+model.weights.h5
+best_model2.keras
+best_model2.keras.zip
+model.weights.h5
+
+# Keep small TFLite models
+!sign_language_bestmodel2.tflite
+
+# Machine learning artifacts
+saved_model/
+saved_model_bestmodel2/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node.js (for React Native app)
+SignLanguageApp/node_modules/
+SignLanguageApp/.expo/
+SignLanguageApp/dist/
+SignLanguageApp/build/
+SignLanguageApp/.gradle/
+SignLanguageApp/android/app/build/
+SignLanguageApp/ios/build/
