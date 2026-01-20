@@ -1,0 +1,12 @@
+<!-- This is a placeholder adaptive icon for the Sign Language App -->
+<svg width="108" height="108" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="108" height="108" fill="#FFFFFF"/>
+  <circle cx="54" cy="54" r="40" fill="url(#gradient)" opacity="0.8"/>
+  <path d="M54 34C54 34 62 54 54 74C46 54 54 34 54 34Z" fill="white" opacity="0.9"/>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="108" y2="108" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#00D4FF"/>
+      <stop offset="1" stop-color="#6A5ACD"/>
+    </linearGradient>
+  </defs>
+</svg>

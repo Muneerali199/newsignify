@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   HomeScreen,
   CameraScreen,
+  ExpoCameraScreen,
   LearnScreen,
   SettingsScreen,
 } from '../screens';
@@ -222,6 +223,14 @@ const AppNavigator = () => {
         <Stack.Screen
           name="CameraFull"
           component={CameraScreen}
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="ExpoCamera"
+          component={ExpoCameraScreen}
           options={{
             presentation: 'fullScreenModal',
             animation: 'slide_from_bottom',

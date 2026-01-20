@@ -33,7 +33,6 @@ import {
   useCameraPermission,
   useFrameProcessor,
 } from 'react-native-vision-camera';
-import { useTensorflowModel, TensorflowModel } from 'react-native-fast-tflite';
 import {
   GlassCard,
   GradientButton,
@@ -53,8 +52,16 @@ import {
   Typography,
   Spacing,
   BorderRadius,
-  SignLabels,
 } from '../theme';
+import { 
+  useSignLanguageModel, 
+  simulateLandmarksForDemo,
+  extractLandmarks,
+  hasEnoughLandmarkData,
+  validateInputData,
+  preprocessInputData,
+  MODEL_CONFIG
+} from '../utils/modelUtils';
 
 const { width, height } = Dimensions.get('window');
 
@@ -179,10 +186,7 @@ const DetectionOverlay: React.FC<{
   );
 };
 
-// Constants for model
-const SEQUENCE_LENGTH = 30;
-const INPUT_DIM = 171;
-const CONFIDENCE_THRESHOLD = 0.82;
+// Constants for model (imported from modelUtils)
 
 const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -193,22 +197,11 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
   const [isDetecting, setIsDetecting] = useState(false);
   const [detectedSign, setDetectedSign] = useState<string | null>(null);
   const [confidence, setConfidence] = useState(0);
-  const [isModelReady, setIsModelReady] = useState(false);
   const [frameCount, setFrameCount] = useState(0);
   const frameBufferRef = useRef<number[][]>([]);
 
-  // Load TensorFlow Lite model
-  const model = useTensorflowModel(require('../../android/app/src/main/assets/sign_language_model.tflite'));
-
-  useEffect(() => {
-    if (model.state === 'loaded') {
-      setIsModelReady(true);
-      console.log('TFLite model loaded successfully!');
-    } else if (model.state === 'error') {
-      console.error('Failed to load TFLite model:', model.error);
-      Alert.alert('Model Error', 'Failed to load the sign language model.');
-    }
-  }, [model.state]);
+  // Load TensorFlow Lite model using custom hook
+  const { model, isReady: isModelReady, isLoading, error, runInference } = useSignLanguageModel();
 
   // Animation values
   const buttonScale = useSharedValue(1);
@@ -229,69 +222,58 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
   }, []);
 
   // Run inference when we have enough frames
-  const runInference = useCallback(async () => {
-    if (!isModelReady || !model.model || frameBufferRef.current.length < SEQUENCE_LENGTH) {
+  const performInference = useCallback(async () => {
+    if (!isModelReady || !model || frameBufferRef.current.length < MODEL_CONFIG.SEQUENCE_LENGTH) {
       return;
     }
 
     try {
-      // Prepare input tensor [1, 30, 171]
-      const inputData = frameBufferRef.current.slice(-SEQUENCE_LENGTH);
-      const flatInput = new Float32Array(SEQUENCE_LENGTH * INPUT_DIM);
+      // Prepare and validate input data
+      const inputData = frameBufferRef.current.slice(-MODEL_CONFIG.SEQUENCE_LENGTH);
+      if (!validateInputData(inputData)) {
+        console.warn('Invalid input data for inference');
+        return;
+      }
+
+      // Run inference using the model utility
+      const result = await runInference(preprocessInputData(inputData));
       
-      for (let i = 0; i < SEQUENCE_LENGTH; i++) {
-        for (let j = 0; j < INPUT_DIM; j++) {
-          flatInput[i * INPUT_DIM + j] = inputData[i]?.[j] ?? 0;
-        }
-      }
-
-      // Run model inference
-      const outputs = await model.model.run([flatInput]);
-      const predictions = outputs[0] as Float32Array;
-
-      // Find max prediction
-      let maxIdx = 0;
-      let maxConf = predictions[0];
-      for (let i = 1; i < predictions.length; i++) {
-        if (predictions[i] > maxConf) {
-          maxConf = predictions[i];
-          maxIdx = i;
-        }
-      }
-
-      if (maxConf > CONFIDENCE_THRESHOLD) {
-        setDetectedSign(SignLabels[maxIdx]);
-        setConfidence(maxConf);
+      if (result) {
+        setDetectedSign(result.sign);
+        setConfidence(result.confidence);
       } else {
         setDetectedSign(null);
         setConfidence(0);
       }
     } catch (error) {
-      console.error('Inference error:', error);
+      console.error('❌ Inference error:', error);
+      setDetectedSign(null);
+      setConfidence(0);
     }
-  }, [isModelReady, model.model]);
+  }, [isModelReady, model, runInference]);
 
-  // Demo mode: simulate landmark data collection
-  // In production, this would come from MediaPipe hand/pose/face detection
+  // Demo mode: simulate landmark data collection exactly like predictionreal.py
   const processFrame = useCallback(() => {
     if (!isDetecting) return;
 
-    // Generate simulated landmark data for demo
-    // Real implementation would extract this from camera frames using MediaPipe
-    const simulatedLandmarks = new Array(INPUT_DIM).fill(0).map(() => Math.random() * 0.1);
+    // Generate simulated landmark data that matches predictionreal.py format
+    const simulatedLandmarks = simulateLandmarksForDemo();
     
-    frameBufferRef.current.push(simulatedLandmarks);
-    if (frameBufferRef.current.length > SEQUENCE_LENGTH) {
-      frameBufferRef.current.shift();
+    // Check if we have enough landmark data (like predictionreal.py)
+    if (hasEnoughLandmarkData(simulatedLandmarks)) {
+      frameBufferRef.current.push(simulatedLandmarks);
+      if (frameBufferRef.current.length > MODEL_CONFIG.SEQUENCE_LENGTH) {
+        frameBufferRef.current.shift();
+      }
     }
     
     setFrameCount(frameBufferRef.current.length);
 
     // Run inference when buffer is full
-    if (frameBufferRef.current.length === SEQUENCE_LENGTH) {
-      runInference();
+    if (frameBufferRef.current.length === MODEL_CONFIG.SEQUENCE_LENGTH) {
+      performInference();
     }
-  }, [isDetecting, runInference]);
+  }, [isDetecting, performInference]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -426,11 +408,13 @@ const CameraScreen: React.FC<CameraScreenProps> = ({ navigation }) => {
         <View style={styles.headerCenter}>
           <View style={[styles.statusDot, isDetecting && styles.statusDotActive, !isModelReady && {backgroundColor: Colors.warning}]} />
           <Text style={styles.statusText}>
-            {!isModelReady 
+            {isLoading 
               ? 'Loading model...' 
-              : isDetecting 
-                ? `Detecting... (${frameCount}/${SEQUENCE_LENGTH})` 
-                : 'Ready'}
+              : error 
+                ? 'Model Error' 
+                : isDetecting 
+                  ? `Detecting... (${frameCount}/${MODEL_CONFIG.SEQUENCE_LENGTH})` 
+                  : 'Ready'}
           </Text>
         </View>
 

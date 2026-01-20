@@ -218,6 +218,18 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
               fullWidth
               icon={<CameraIcon size={22} color={Colors.neutral.white} />}
             />
+            
+            <View style={styles.demoModeContainer}>
+              <Text style={styles.demoModeText}>Or try with Expo Go:</Text>
+              <GradientButton
+                title="Expo Camera Mode"
+                onPress={() => navigation.navigate('ExpoCamera')}
+                variant="secondary"
+                size="medium"
+                fullWidth
+                icon={<CameraIcon size={18} color={Colors.neutral.white} />}
+              />
+            </View>
           </GlassCard>
         </Animated.View>
 
@@ -535,6 +547,16 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     marginBottom: Spacing.xl,
+  },
+  demoModeContainer: {
+    marginTop: Spacing.md,
+    gap: Spacing.sm,
+  },
+  demoModeText: {
+    fontSize: Typography.fontSize.sm,
+    color: Colors.neutral.gray400,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
   },
 });
 
